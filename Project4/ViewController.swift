@@ -44,7 +44,9 @@ class ViewController: UIViewController, WKNavigationDelegate {
         // And progress bar (with KVO)
         let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
         let refresh = UIBarButtonItem(barButtonSystemItem: .refresh, target: nil, action: #selector(webView.reload))
-        // Assign both to the array toolbarItems (property of UIViewController)
+        let goBack = UIBarButtonItem(title: "Back", style: .plain, target: nil, action: #selector(webView.goBack))
+        let goForward = UIBarButtonItem(title: "Forward", style: .plain, target: nil, action: #selector(webView.goForward))
+        // Assign the above to the array toolbarItems (property of UIViewController)
         // Progress bar
         // We wrap the progress bar in UIBarButtonItem so we can include it
         // in our toolbar
@@ -52,7 +54,7 @@ class ViewController: UIViewController, WKNavigationDelegate {
         progressView.sizeToFit()
         let progressButton = UIBarButtonItem(customView: progressView)
         // Toolbar
-        toolbarItems = [progressButton, spacer, refresh]
+        toolbarItems = [progressButton, spacer, goBack, spacer, goForward, spacer, refresh]
         navigationController?.isToolbarHidden = false
 
         // Add KVO observer:
@@ -126,8 +128,15 @@ class ViewController: UIViewController, WKNavigationDelegate {
             }
         }
         
+        // Add alert to indicate site was bloacked
+        let ac = UIAlertController(title: "Access Denied!", message: "This site is not on your safe list", preferredStyle: .alert)
+        ac.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        present(ac, animated: true)
+        
         // If the above test fails:
         decisionHandler(.cancel)
+        
+        
     }
 }
 
