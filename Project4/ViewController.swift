@@ -14,6 +14,10 @@ import WebKit
 class ViewController: UIViewController, WKNavigationDelegate {
     
     var webView: WKWebView!
+    var progressView: UIProgressView!
+    // List of safe websites
+    var websites = ["apple.com", "hackingwithswift.com"]
+    
     
     // loadView() gets called before viewDidLoad()
     override func loadView() {
@@ -36,18 +40,45 @@ class ViewController: UIViewController, WKNavigationDelegate {
         // Setup rightBarButton
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Open", style: .plain, target: self, action: #selector(openTapped))
         
+        // Create toolbar with flexible space and refresh button
+        // And progress bar (with KVO)
+        let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        let refresh = UIBarButtonItem(barButtonSystemItem: .refresh, target: nil, action: #selector(webView.reload))
+        // Assign both to the array toolbarItems (property of UIViewController)
+        // Progress bar
+        // We wrap the progress bar in UIBarButtonItem so we can include it
+        // in our toolbar
+        progressView = UIProgressView(progressViewStyle: .default)
+        progressView.sizeToFit()
+        let progressButton = UIBarButtonItem(customView: progressView)
+        // Toolbar
+        toolbarItems = [progressButton, spacer, refresh]
+        navigationController?.isToolbarHidden = false
+
+        // Add KVO observer:
+        // Parameters: Who is observer; ourselves thus self
+        // Once you are registered as an observer, you must implement
+        // a method called observeValue() (See below)
+        webView.addObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress), options: .new, context: nil)
+        
+        // Load first site
         // In this project must use https
-        let url = URL(string: "https://www.hackingwithswift.com")!
+        let url = URL(string: "https://" + websites[0])!
         // String converted to URL and then a URLRequest
         webView.load(URLRequest(url: url))
         webView.allowsBackForwardNavigationGestures = true
+        
     }
 
     @objc func openTapped() {
         //Create pop-screen
         let ac = UIAlertController(title: "Open page...", message: nil, preferredStyle: .actionSheet)
-        ac.addAction(UIAlertAction(title: "apple.com", style: .default, handler: openPage))
-        ac.addAction(UIAlertAction(title: "hackingwithswift.com", style: .default, handler: openPage))
+        
+        // Add one action for every "safe" site
+        for website in websites {
+                    ac.addAction(UIAlertAction(title: website, style: .default, handler: openPage))
+        }
+        
         ac.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
         // for ipads...
         ac.popoverPresentationController?.barButtonItem = navigationItem.rightBarButtonItem
@@ -67,6 +98,36 @@ class ViewController: UIViewController, WKNavigationDelegate {
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         // set title of page
         title = webView.title
+    }
+    
+    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+        if keyPath == "estimatedProgress" {
+            progressView.progress = Float(webView.estimatedProgress)
+        }
+    }
+    
+    // Delegate method that allows us to control navigation
+    // I.e., should we allow the page to load or not (e.g., if
+    // the page leads to a site not on our safe site list.)
+    // DecisionHandler is an escapint closure -- has the potential
+    // to escape the method and be used at a later date
+    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        
+        // code to evaluate if URL is on safelist and then call
+        // decisionhandler with a positive or negative answer.
+        let url = navigationAction.request.url
+        
+        if let host = url?.host {
+            for website in websites {
+                if host.contains(website) {
+                    decisionHandler(.allow)
+                    return
+                }
+            }
+        }
+        
+        // If the above test fails:
+        decisionHandler(.cancel)
     }
 }
 
