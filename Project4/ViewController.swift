@@ -16,7 +16,9 @@ class ViewController: UIViewController, WKNavigationDelegate {
     var webView: WKWebView!
     var progressView: UIProgressView!
     // List of safe websites
-    var websites = ["apple.com", "hackingwithswift.com"]
+    var websites: [String] = []
+    // Initial Website to load
+    var initialWebsite: String = ""
     
     
     // loadView() gets called before viewDidLoad()
@@ -36,6 +38,10 @@ class ViewController: UIViewController, WKNavigationDelegate {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        // Establish list of safe websites
+        let listOfSafeWebsites = SafeWebSites()
+        websites = listOfSafeWebsites.safeWebsites
         
         // Setup rightBarButton
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Open", style: .plain, target: self, action: #selector(openTapped))
@@ -65,7 +71,7 @@ class ViewController: UIViewController, WKNavigationDelegate {
         
         // Load first site
         // In this project must use https
-        let url = URL(string: "https://" + websites[0])!
+        let url = URL(string: "https://" + initialWebsite)!
         // String converted to URL and then a URLRequest
         webView.load(URLRequest(url: url))
         webView.allowsBackForwardNavigationGestures = true
@@ -114,11 +120,11 @@ class ViewController: UIViewController, WKNavigationDelegate {
     // DecisionHandler is an escapint closure -- has the potential
     // to escape the method and be used at a later date
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        
+
         // code to evaluate if URL is on safelist and then call
         // decisionhandler with a positive or negative answer.
         let url = navigationAction.request.url
-        
+
         if let host = url?.host {
             for website in websites {
                 if host.contains(website) {
@@ -127,16 +133,15 @@ class ViewController: UIViewController, WKNavigationDelegate {
                 }
             }
         }
-        
+
         // Add alert to indicate site was bloacked
         let ac = UIAlertController(title: "Access Denied!", message: "This site is not on your safe list", preferredStyle: .alert)
         ac.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
         present(ac, animated: true)
-        
+
         // If the above test fails:
         decisionHandler(.cancel)
-        
-        
+
     }
 }
 
